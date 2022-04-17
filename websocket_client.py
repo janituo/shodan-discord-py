@@ -124,6 +124,7 @@ class WebsocketClient:
             await asyncio.sleep(self.interval * random.random())
 
     async def receive_message(self, connection):
+        # TODO: Handle reconnecting
         while True:
             try:
                 message = await connection.recv()
@@ -132,7 +133,7 @@ class WebsocketClient:
 
             except websockets.exceptions.ConnectionClosed:
                 logging.exception("Connection with server closed.")
-                break
+                pass
 
     async def heartbeat(self, connection):
         while True:
@@ -151,7 +152,7 @@ class WebsocketClient:
 
             except websockets.exceptions.ConnectionClosed:
                 logging.exception("Connection with server closed.")
-                break
+                pass
             except websockets.exceptions.ConnectionClosedOk:
                 logging.exception("Connection with server closed.")
-                break
+                pass
