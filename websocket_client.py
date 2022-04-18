@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 
 from bot_secrets import BOT_TOKEN
+from commands import handle_command
 
 
 @dataclass
@@ -19,13 +20,10 @@ class GatewayResponse:
 class WebsocketClient:
     BASE_URL = "https://discord.com/api"
 
-    def __init__(self, version=None, bot=None):
+    def __init__(self, version, api_client):
         self.gateway_url = self.BASE_URL + "/v" + version + "/gateway"
         self.version = version
-        self.bot = bot
-
-        if not self.bot:
-            return
+        self.api_client = api_client
 
     def get_websocket_url(self):
         response = requests.get(self.gateway_url)
@@ -40,7 +38,7 @@ class WebsocketClient:
 
         if not ws_url:
             logging.error("Error. Websocket URL not defined.")
-            return
+            return None
 
         self.connection = await websockets.connect(ws_url)
 
@@ -100,8 +98,8 @@ class WebsocketClient:
             guild_details = getattr(response, "d", None)
             if guild_details:
                 self.guild_id = guild_details.id
-                self.bot.get_channels(self.guild_id)
-                self.bot_id = self.bot.get_bot_id()
+                self.api_client.get_channels(self.guild_id)
+                self.bot_id = self.api_client.get_bot_id()
 
         if t == "MESSAGE_CREATE":
             logging.debug("Received MESSAGE_CREATE")
@@ -113,7 +111,9 @@ class WebsocketClient:
 
             is_bot = getattr(author, "bot", None)
             if not is_bot:
-                self.bot.get_message(message_id, channel_id, message_content)
+                message = handle_command(message_id, channel_id, message_content)
+                if message:
+                    self.api_client.send_message(channel_id, message)
 
         # if connection_lost:
         #     await self.resume(connection)
@@ -124,7 +124,6 @@ class WebsocketClient:
             await asyncio.sleep(self.interval * random.random())
 
     async def receive_message(self, connection):
-        # TODO: Handle reconnecting
         while True:
             try:
                 message = await connection.recv()
