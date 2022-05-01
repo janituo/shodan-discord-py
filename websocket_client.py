@@ -21,7 +21,7 @@ class WebsocketClient:
     BASE_URL = "https://discord.com/api"
 
     def __init__(self, version, api_client):
-        self.gateway_url = self.BASE_URL + "/v" + version + "/gateway"
+        self.gateway_url = f"{self.BASE_URL}/v{version}/gateway"
         self.version = version
         self.api_client = api_client
 
@@ -29,7 +29,7 @@ class WebsocketClient:
         response = requests.get(self.gateway_url)
         gw_response = GatewayResponse(**response.json())
         if gw_response and self.version:
-            ws_url = gw_response.url + "?v=" + self.version + "&encoding=json"
+            ws_url = f"{gw_response.url}?v={self.version}&encoding=json"
             return ws_url
         return None
 
